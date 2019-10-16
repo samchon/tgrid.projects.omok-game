@@ -67,9 +67,10 @@ export class Board
             color: color
         });
 
-        return this.next_ = {
+        this.next_ = {
             color: (color === Color.BLACK) ? Color.WHITE : Color.BLACK
         };
+        return this.next_;
     }
 }
 

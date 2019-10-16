@@ -1,11 +1,13 @@
+import { IGame } from "../features/IGame";
+
+import { Board } from "../features/Board";
 import { Color } from "../features/Color";
 import { Role } from "../features/Role";
-import { Board } from "../features/Board";
 
 export interface IObserver
 {
-    assignParticipants(players: string[], observers: string[]): void;
-    printGame(board: Color[][], next: Board.INext): void;
+    assign(game: IGame): void;
+    printBoard(board: Color[][], next: Board.INext): void;
     printTalk(from: string, content: string): void;
 }
 export namespace IObserver
