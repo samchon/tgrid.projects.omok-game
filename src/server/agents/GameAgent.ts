@@ -1,18 +1,19 @@
 import { HashMap } from "tstl/container/HashMap";
 
-import { IGame } from "../features/IGame";
-import { Color } from "../features/Color";
+import { IGame } from "../../features/IGame";
+import { Color } from "../../features/Color";
 
 import { ServerAgent } from "./ServerAgent";
 import { UserAgent } from "./UserAgent";
-import { PlayerService } from "./PlayerService";
-import { ObserverService } from "./ObserverService";
-import { Board } from "../features/Board";
-import { Global } from "../Global";
+import { PlayerService } from "../services/PlayerService";
+import { ObserverService } from "../services/ObserverService";
+import { Board } from "../../features/Board";
+import { Global } from "../../Global";
 
-export class Game
+export class GameAgent
 {
     public readonly uid: number;
+    public readonly title: string;
 
     public readonly server_: ServerAgent;
     public readonly players_: HashMap<UserAgent, PlayerService>;
@@ -24,9 +25,10 @@ export class Game
     /* ----------------------------------------------------------------
         CONSTRUCTORS
     ---------------------------------------------------------------- */
-    public constructor(server: ServerAgent, size: number)
+    private constructor(server: ServerAgent, size: number, title: string)
     {
         this.uid = Global.increment();
+        this.title = title;
 
         this.server_ = server;
         this.players_ = new HashMap();
@@ -36,10 +38,35 @@ export class Game
         this.winner = null;
     }
 
+    public static create(server: ServerAgent, size: number, title: string): GameAgent
+    {
+        let game: GameAgent = new GameAgent(server, size, title);
+        server.games.emplace(game.uid, game);
+
+        let raw: IGame = game.toJSON();
+        for (let hall of server.halls)
+        {
+            let p = hall.awaitor_.insert(raw);
+            p.catch(() => {});
+        }
+        return game;
+    }
+
+    public close(): void
+    {
+        this.server_.games.erase(this.uid);
+        for (let hall of this.server_.halls)
+        {
+            let p = hall.awaitor_.erase(this.uid);
+            p.catch(() => {});
+        }
+    }
+
     public toJSON(): IGame
     {
         return {
             uid: this.uid,
+            title: this.title,
             size: this.board_.size(),
             players: [...this.players_].map(it => it.first.name),
             observers: [...this.observers_].map(it => it.first.name),
@@ -80,15 +107,9 @@ export class Game
         
         // INFORM
         if (this.players_.empty() && this.observers_.empty())
-            for (let hall of this.server_.halls)
-            {
-                let p = hall.awaitor_.erase(this.uid);
-                p.catch(() => {});
-            }
+            this.close();
         else
-        {
             this._Handle_participant();
-        }
     }
 
     private _Get_dictionary(service: ObserverService | PlayerService): HashMap<UserAgent, ObserverService>

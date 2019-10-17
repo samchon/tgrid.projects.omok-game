@@ -1,20 +1,23 @@
-import { Driver } from "tgrid/components/Driver";
-import { IObserver } from "../controllers/IObserver";
-
-import { UserAgent } from "./UserAgent";
-import { Game } from "./Game";
 import { WebAcceptor } from "tgrid/protocols/web/WebAcceptor";
+import { Driver } from "tgrid/components/Driver";
+
+import { IObserverService } from "../../controllers/IObserverService";
+import { IObserver } from "../../controllers/IObserver";
+
+import { UserAgent } from "../agents/UserAgent";
+import { GameAgent } from "../agents/GameAgent";
 
 export class ObserverService<Controller extends IObserver = IObserver>
+    implements IObserverService
 {
     public readonly user_: UserAgent;
-    public readonly game_: Game;
+    public readonly game_: GameAgent;
     public readonly participant_: Driver<Controller>;
 
     /* ----------------------------------------------------------------
         CONSTRUCTORS
     ---------------------------------------------------------------- */
-    protected constructor(user: UserAgent, game: Game, observer: Driver<Controller>)
+    protected constructor(user: UserAgent, game: GameAgent, observer: Driver<Controller>)
     {
         this.user_ = user;
         this.game_ = game;
@@ -24,7 +27,7 @@ export class ObserverService<Controller extends IObserver = IObserver>
     public static async initialize
         (
             user: UserAgent, 
-            game: Game, 
+            game: GameAgent, 
             acceptor: WebAcceptor<ObserverService>
         ): Promise<ObserverService>
     {
@@ -32,12 +35,13 @@ export class ObserverService<Controller extends IObserver = IObserver>
         let service: ObserverService = new ObserverService(user, game, observer);
 
         await acceptor.accept(service);
+        user.participate(service);
         game.participate(service);
 
         return service;
     }
 
-    public destructor(): void
+    public _Destructor(): void
     {
         this.game_.unlink(this);
         this.user_.unlink(this);

@@ -2,14 +2,16 @@ import { WebAcceptor } from "tgrid/protocols/web/WebAcceptor";
 import { Driver } from "tgrid/components/Driver";
 import { DomainError } from "tstl/exception/LogicError";
 
-import { IAwaitor } from "../controllers/IAwaitor";
-import { IHall } from "../controllers/IHall";
-import { Role } from "../features/Role";
+import { IAwaitor } from "../../controllers/IAwaitor";
+import { IGame } from "../../features/IGame";
+import { IHall } from "../../controllers/IHall";
+import { Role } from "../../features/Role";
 
-import { ServerAgent } from "./ServerAgent";
-import { UserAgent } from "./UserAgent";
-import { Game } from "./Game";
-import { IGame } from "../features/IGame";
+import { ServerAgent } from "../agents/ServerAgent";
+import { UserAgent } from "../agents/UserAgent";
+import { GameAgent } from "../agents/GameAgent";
+
+import { Global } from "../../Global";
 
 export class HallService implements IHall
 {
@@ -40,6 +42,7 @@ export class HallService implements IHall
         let service: HallService = new HallService(server, awaitor);
 
         await acceptor.accept(service);
+        server.halls.insert(service);
 
         // DELIVER GAME LIST
         let games: IGame[] = [...server.games].map(it => it.second.toJSON());
@@ -52,35 +55,36 @@ export class HallService implements IHall
     {
         if (this.user_ !== null)
             this.user_.unlink(this);
+        this.server_.halls.erase(this);
     }
 
     /* ----------------------------------------------------------------
         FUNCTIONS FOR REMOTE SYSTEM
     ---------------------------------------------------------------- */
-    public setName(val: string): boolean
+    public setName(val: string): number
     {
         if (this.user_ !== null)
-            return false;
+            throw new DomainError("You've already configured your name.");
         else if (this.server_.users.has(val) === true)
-            return false;
+            throw new DomainError("Duplicated name exists.");
 
         this.user_ = new UserAgent(this.server_, this, val);
         this.server_.users.emplace(this.user_.name, this.user_);
 
-        return true;
+        return this.user_.uid;
     }
 
-    public createGame(size: number): number
+    public createGame(size: number, title: string): number
     {
         if (this.user_ === null)
             throw new DomainError("Set your name first.");
         else if (size <= 0 || Math.floor(size) !== size || size % 2 === 1)
             throw new DomainError("Size must be even number.");
+        else if (this.user_.size() >= Global.LIMIT)
+            throw new DomainError(`You can't participate in over ${Global.LIMIT} games.`);
 
         // EMPLACE GAME
-        let game: Game = new Game(this.server_, size);
-        this.server_.games.emplace(game.uid, game);
-
+        let game: GameAgent = GameAgent.create(this.server_, size, title);
         return game.uid;
     }
 
@@ -91,7 +95,7 @@ export class HallService implements IHall
         else if (this.server_.games.has(uid) === false)
             return `Unable to find the matched game uid: ${uid}.`;
 
-        let game: Game = this.server_.games.get(uid);
+        let game: GameAgent = this.server_.games.get(uid);
 1
         if (game.players_.has(this.user_) || game.observers_.has(this.user_))
             return "You are already participating in the game.";

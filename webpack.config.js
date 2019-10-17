@@ -2,7 +2,7 @@ const path = require('path');
 
 module.exports = {
     entry: {
-        'app': './src/app.tsx'
+        'app': './src/app/index.tsx'
     },
     output: {
         filename: '[name].min.js',

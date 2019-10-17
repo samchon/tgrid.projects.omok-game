@@ -16,24 +16,14 @@ import { Driver } from "tgrid/components/Driver";
 
 import { IHall } from "../../controllers/IHall";
 import { Awaitor } from "../providers/Awaitor";
-import { GamePage } from "./GamePage";
+import { HallPage } from "./HallPage";
 import { Global } from "../../Global";
 
-export class JoinPage extends React.Component<JoinMovie.IProps>
+export class IntroPage extends React.Component<IntroPage.IProps>
 {
-    private get name_input_(): HTMLInputElement
-    {
-        return document.getElementById("name_input") as HTMLInputElement;
-    }
-
     /* ----------------------------------------------------------------
         EVENT HANDLERS
     ---------------------------------------------------------------- */
-    public componentDidMount(): void
-    {
-        this.name_input_.select();
-    }
-
     private _Open_link(url: string): void
     {
         window.open(url, "_blank");
@@ -47,21 +37,28 @@ export class JoinPage extends React.Component<JoinMovie.IProps>
 
     private async _Participate(): Promise<void>
     {
-        let value: string = this.name_input_.value;
+        let value: string = (document.getElementById("name_input") as HTMLInputElement).value;
         if (value === "")
         {
             alert("The name cannot be empty.");
             return;
         }
 
-        let service: Driver<IHall> = this.props.service;
-        if (await service.setName(value) === false)
+        try
         {
-            alert("Duplicated name exists.");
-            return;
-        }
+            let service: Driver<IHall> = this.props.hall;
+            let uid: number = await service.setName(value);
 
-        ReactDOM.render(<GamePage {...this.props} />, document.body);
+            let props: HallPage.IProps = {
+                ...this.props,
+                user: { uid: uid, name: value }
+            };
+            ReactDOM.render(<HallPage {...props } />, document.body);
+        }
+        catch (error)
+        {
+            alert(error.message);
+        }
     }
 
     /* ----------------------------------------------------------------
@@ -89,7 +86,8 @@ export class JoinPage extends React.Component<JoinMovie.IProps>
                 <p> Insert your name: </p>
                 <p>
                     <Input id="name_input" 
-                           placeholder="Your Name"
+                           placeholder="Your Name" 
+                           autoFocus
                            onKeyUp={this._Handle_keyUp.bind(this)} /> 
                     {" "}
                     <Button color="primary" 
@@ -100,11 +98,11 @@ export class JoinPage extends React.Component<JoinMovie.IProps>
         </React.Fragment>;
     }
 }
-export namespace JoinMovie
+export namespace IntroPage
 {
     export interface IProps
     {
         awaitor: Awaitor;
-        service: Driver<IHall>;
+        hall: Driver<IHall>;
     }
 }

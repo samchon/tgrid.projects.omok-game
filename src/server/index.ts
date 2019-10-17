@@ -1,5 +1,5 @@
-import { ServerAgent } from "./services/ServerAgent";
-import { Global } from "./Global";
+import { ServerAgent } from "./agents/ServerAgent";
+import { Global } from "../Global";
 
 async function main(): Promise<void>
 {

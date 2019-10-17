@@ -8,15 +8,13 @@ export class Awaitor implements IAwaitor
 
     public assign(games: IGame[]): void
     {
-        this.games = games;
-        console.log("Have come");
-
+        this.games = games.reverse();
         this.onChange();
     }
 
     public insert(game: IGame): void
     {
-        this.games.push(game);
+        this.games.unshift(game);
         this.onChange();
     }
 

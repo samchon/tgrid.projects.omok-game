@@ -1,11 +1,11 @@
 import { Driver } from "tgrid/components/Driver";
-import { IPlayer } from "../controllers/IPlayer";
+import { IPlayer } from "../../controllers/IPlayer";
 
-import { Game } from "./Game";
-import { Color } from "../features/Color";
+import { GameAgent } from "../agents/GameAgent";
+import { Color } from "../../features/Color";
 import { ObserverService } from "./ObserverService";
-import { UserAgent } from "./UserAgent";
-import { Board } from "../features/Board";
+import { UserAgent } from "../agents/UserAgent";
+import { Board } from "../../features/Board";
 import { WebAcceptor } from "tgrid/protocols/web/WebAcceptor";
 
 export class PlayerService extends ObserverService<IPlayer>
@@ -15,7 +15,7 @@ export class PlayerService extends ObserverService<IPlayer>
     /* ----------------------------------------------------------------
         CONSTRUCTORS
     ---------------------------------------------------------------- */
-    public constructor(user: UserAgent, game: Game, color: Color, player: Driver<IPlayer>)
+    private constructor(user: UserAgent, game: GameAgent, color: Color, player: Driver<IPlayer>)
     {
         super(user, game, player);
         this.color_ = color;
@@ -24,15 +24,18 @@ export class PlayerService extends ObserverService<IPlayer>
     public static async initialize
         (
             user: UserAgent, 
-            game: Game, 
+            game: GameAgent, 
             acceptor: WebAcceptor<PlayerService>
         ): Promise<PlayerService>
     {
-        let color: Color = game.players_.empty() ? Color.BLACK : Color.WHITE;
+        let color: Color = game.players_.empty() 
+            ? Color.BLACK 
+            : Color.WHITE;
         let player: Driver<IPlayer> = acceptor.getDriver();
         let service: PlayerService = new PlayerService(user, game, color, player);
 
         await acceptor.accept(service);
+        user.participate(service);
         game.participate(service);
 
         return service;

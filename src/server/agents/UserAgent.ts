@@ -1,10 +1,10 @@
 import { HashSet } from "tstl/container/HashSet";
 
 import { ServerAgent } from "./ServerAgent";
-import { HallService } from "./HallService";
-import { ObserverService } from "./ObserverService";
+import { HallService } from "../services/HallService";
+import { ObserverService } from "../services/ObserverService";
 
-import { Global } from "../Global";
+import { Global } from "../../Global";
 
 export class UserAgent
 {
@@ -41,5 +41,10 @@ export class UserAgent
         // ERASE USER
         if (this.hall_ === null && this.participants_.empty())
             this.server.users.erase(this.name);
+    }
+
+    public size(): number
+    {
+        return this.participants_.size();
     }
 }
